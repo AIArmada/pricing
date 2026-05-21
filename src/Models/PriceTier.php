@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -14,8 +15,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
+use InvalidArgumentException;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * Represents quantity-based tiered pricing.
@@ -38,7 +39,7 @@ class PriceTier extends Model
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
-    use LogsActivity;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'pricing.features.owner';
 
@@ -96,6 +97,13 @@ class PriceTier extends Model
                 return;
             }
 
+            $hasOwnerType = $tier->owner_type !== null;
+            $hasOwnerId = $tier->owner_id !== null;
+
+            if ($hasOwnerType !== $hasOwnerId) {
+                throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
+            }
+
             $owner = PricingOwnerScope::resolveOwner();
 
             if ($owner === null) {
@@ -103,11 +111,19 @@ class PriceTier extends Model
                     throw new AuthorizationException('Cannot write owned price tiers without an owner context.');
                 }
             } else {
-                if ($tier->owner_type === null && $tier->owner_id === null) {
+                if (
+                    ! $tier->exists
+                    && $tier->owner_type === null
+                    && $tier->owner_id === null
+                    && (bool) config('pricing.features.owner.auto_assign_on_create', true)
+                ) {
                     $tier->assignOwner($owner);
                 }
 
-                if (! $tier->belongsToOwner($owner)) {
+                if (
+                    ($tier->owner_type !== null || $tier->owner_id !== null)
+                    && ! $tier->belongsToOwner($owner)
+                ) {
                     throw new AuthorizationException('Cannot write price tiers outside the current owner scope.');
                 }
             }

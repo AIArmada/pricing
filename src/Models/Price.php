@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -15,8 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
+use InvalidArgumentException;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * Represents a price for a specific product/variant in a price list.
@@ -40,7 +41,7 @@ class Price extends Model
     }
     use HasOwnerScopeConfig;
     use HasUuids;
-    use LogsActivity;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'pricing.features.owner';
 
@@ -99,6 +100,13 @@ class Price extends Model
                 return;
             }
 
+            $hasOwnerType = $price->owner_type !== null;
+            $hasOwnerId = $price->owner_id !== null;
+
+            if ($hasOwnerType !== $hasOwnerId) {
+                throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
+            }
+
             $owner = PricingOwnerScope::resolveOwner();
 
             if ($owner === null) {
@@ -106,11 +114,19 @@ class Price extends Model
                     throw new AuthorizationException('Cannot write owned prices without an owner context.');
                 }
             } else {
-                if ($price->owner_type === null && $price->owner_id === null) {
+                if (
+                    ! $price->exists
+                    && $price->owner_type === null
+                    && $price->owner_id === null
+                    && (bool) config('pricing.features.owner.auto_assign_on_create', true)
+                ) {
                     $price->assignOwner($owner);
                 }
 
-                if (! $price->belongsToOwner($owner)) {
+                if (
+                    ($price->owner_type !== null || $price->owner_id !== null)
+                    && ! $price->belongsToOwner($owner)
+                ) {
                     throw new AuthorizationException('Cannot write prices outside the current owner scope.');
                 }
             }

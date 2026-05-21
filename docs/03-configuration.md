@@ -23,8 +23,6 @@ return [
             'price_lists' => 'price_lists',
             'price_tiers' => 'price_tiers',
         ],
-
-        'json_column_type' => env('PRICING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
     ],
 
     /*
@@ -45,6 +43,7 @@ return [
         'owner' => [
             'enabled' => env('PRICING_OWNER_ENABLED', false),
             'include_global' => false,
+            'auto_assign_on_create' => true,
         ],
     ],
 ];
@@ -59,7 +58,6 @@ return [
 | `database.tables.prices` | `'prices'` | Table name for prices |
 | `database.tables.price_lists` | `'price_lists'` | Table name for price lists |
 | `database.tables.price_tiers` | `'price_tiers'` | Table name for price tiers |
-| `database.json_column_type` | `'json'` | JSON column type for your database |
 
 ### Defaults
 
@@ -73,35 +71,16 @@ return [
 |-----|---------|-------------|
 | `features.owner.enabled` | `false` | Enable multitenancy/owner scoping |
 | `features.owner.include_global` | `false` | Include global (ownerless) records in queries |
+| `features.owner.auto_assign_on_create` | `true` | Auto-assign the resolved owner to newly created pricing records |
 
 ## Environment Variables
 
 ```bash
 # Enable multitenancy
 PRICING_OWNER_ENABLED=true
-
-# JSON column type (for MySQL < 8.0 or MariaDB)
-PRICING_JSON_COLUMN_TYPE=json
-COMMERCE_JSON_COLUMN_TYPE=json
 ```
 
-## Pricing Settings (Spatie Laravel Settings)
 
-The package includes settings classes for runtime configuration:
-
-### PricingSettings
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `defaultCurrency` | string | `'MYR'` | Default currency code |
-| `decimalPlaces` | int | `2` | Decimal places for display |
-| `pricesIncludeTax` | bool | `false` | Whether prices include tax |
-| `roundingMode` | string | `'half_up'` | Rounding mode ('up', 'down', 'half_up', 'half_down') |
-| `minimumOrderValue` | int | `0` | Minimum order value (cents) |
-| `maximumOrderValue` | int | `10000000` | Maximum order value (cents) |
-| `promotionalPricingEnabled` | bool | `true` | Enable promotional pricing |
-| `tieredPricingEnabled` | bool | `true` | Enable tiered pricing |
-| `customerGroupPricingEnabled` | bool | `false` | Enable customer group pricing |
 
 ### PromotionalPricingSettings
 
