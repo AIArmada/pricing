@@ -64,13 +64,9 @@ $tiers = PriceTier::where('tierable_type', Product::class)
     ->get();
 ```
 
-2. Check quantity falls within tier range (keep the item filter — `forQuantity()`
-   alone matches tiers for any item):
+2. Check quantity falls within tier range:
 ```php
-$tier = PriceTier::where('tierable_type', Product::class)
-    ->where('tierable_id', $product->id)
-    ->forQuantity(25)
-    ->first();
+$tier = PriceTier::forQuantity(25)->first();
 ```
 
 3. Verify tier's price list association:
@@ -115,13 +111,8 @@ $price = Price::where('price_list_id', $list->id)
 1. **No owner context set**: In multitenancy mode, owner context is required.
 
 ```php
-// Set owner context — OwnerContext::set() does not exist.
-OwnerContext::setForRequest($tenant); // middleware/framework entry points only
-
-// Or scope a unit of work explicitly
-OwnerContext::withOwner($tenant, function () use ($priceList) {
-    $priceList->update(['priority' => 20]);
-});
+// Set owner context
+OwnerContext::setForRequest($tenant);
 ```
 
 2. **Mismatched owner**: Trying to update record belonging to different owner.
