@@ -142,7 +142,7 @@ if ($result->hasDiscount()) {
     echo "You save: " . $result->getFormattedSavings();
 }
 
-// Formatted prices
+// Formatted prices (symbol is prefixed with no separating space)
 echo $result->getFormattedOriginalPrice(); // "RM50.00"
 echo $result->getFormattedFinalPrice();    // "RM45.00"
 echo $result->getFormattedSavings();       // "RM5.00"
